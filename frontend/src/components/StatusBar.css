@@ -1,0 +1,37 @@
+/* ═══════════════════════════════════════════════════
+   StatusBar — Bottom system status indicators
+   ═══════════════════════════════════════════════════ */
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-lg);
+  padding: var(--space-sm) var(--space-xl);
+  background: linear-gradient(0deg, rgba(6, 6, 10, 0.95) 0%, rgba(6, 6, 10, 0.7) 100%);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border-subtle);
+  position: relative;
+}
+
+.status-bar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent-cyan-dim), var(--accent-purple-dim), transparent);
+}
+
+.status-bar-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.status-bar-item .icon {
+  font-size: var(--font-size-sm);
+}

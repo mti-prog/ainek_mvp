@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+venv/
+.env
+
+# PyTorch model weights (large files)
+backend/weights/*.safetensors
+backend/weights/*.bin
+backend/weights/*.pt
+backend/weights/*.ckpt
+!backend/weights/.gitkeep
+
+# Node.js
+node_modules/
+frontend/dist/
+frontend/.env
+.DS_Store
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
