@@ -40,7 +40,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpac
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   POST: () => (/* binding */ POST)\n/* harmony export */ });\n/* harmony import */ var _google_generative_ai__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @google/generative-ai */ \"(rsc)/./node_modules/@google/generative-ai/dist/index.mjs\");\n/* harmony import */ var next_server__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! next/server */ \"(rsc)/./node_modules/next/dist/api/server.js\");\n\n\nconst genAI = new _google_generative_ai__WEBPACK_IMPORTED_MODULE_0__.GoogleGenerativeAI(process.env.GEMINI_API_KEY || \"\");\nasync function POST(req) {\n    try {\n        const { imageBase64, clothingImageUrl, clothingName } = await req.json();\n        if (!imageBase64) {\n            return next_server__WEBPACK_IMPORTED_MODULE_1__.NextResponse.json({\n                error: \"No image provided\"\n            }, {\n                status: 400\n            });\n        }\n        const model = genAI.getGenerativeModel({\n            model: \"gemini-2.0-flash-preview-image-generation\"\n        });\n        const prompt = `You are a virtual fitting room AI. The user wants to try on: \"${clothingName}\". \n    Generate a photorealistic image showing this person wearing the selected clothing item naturally and stylishly.\n    Preserve the person's exact pose, skin tone, hair, and facial features.\n    The clothing should fit naturally on their body with proper lighting and shadows.\n    Make it look like a professional fashion photo.`;\n        // Build content parts\n        const imagePart = {\n            inlineData: {\n                data: imageBase64.replace(/^data:image\\/\\w+;base64,/, \"\"),\n                mimeType: \"image/jpeg\"\n            }\n        };\n        const result = await model.generateContent({\n            contents: [\n                {\n                    role: \"user\",\n                    parts: [\n                        imagePart,\n                        {\n                            text: prompt\n                        }\n                    ]\n                }\n            ],\n            generationConfig: {\n                // @ts-expect-error - responseModalities is supported in newer SDK versions\n                responseModalities: [\n                    \"IMAGE\",\n                    \"TEXT\"\n                ]\n            }\n        });\n        const response = result.response;\n        let generatedImageBase64 = null;\n        let textResponse = null;\n        for (const part of response.candidates?.[0]?.content?.parts || []){\n            if (part.inlineData?.mimeType?.startsWith(\"image/\")) {\n                generatedImageBase64 = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;\n            } else if (part.text) {\n                textResponse = part.text;\n            }\n        }\n        return next_server__WEBPACK_IMPORTED_MODULE_1__.NextResponse.json({\n            success: true,\n            generatedImage: generatedImageBase64,\n            text: textResponse\n        });\n    } catch (error) {\n        console.error(\"Gemini API error:\", error);\n        return next_server__WEBPACK_IMPORTED_MODULE_1__.NextResponse.json({\n            error: \"Failed to generate try-on image\",\n            details: String(error)\n        }, {\n            status: 500\n        });\n    }\n}\n//# sourceURL=[module]\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiKHJzYykvLi9zcmMvYXBwL2FwaS9nZW1pbmkvcm91dGUudHMiLCJtYXBwaW5ncyI6Ijs7Ozs7O0FBQTJEO0FBQ0g7QUFFeEQsTUFBTUUsUUFBUSxJQUFJRixxRUFBa0JBLENBQUNHLFFBQVFDLEdBQUcsQ0FBQ0MsY0FBYyxJQUFJO0FBRTVELGVBQWVDLEtBQUtDLEdBQWdCO0lBQ3pDLElBQUk7UUFDRixNQUFNLEVBQUVDLFdBQVcsRUFBRUMsZ0JBQWdCLEVBQUVDLFlBQVksRUFBRSxHQUFHLE1BQU1ILElBQUlJLElBQUk7UUFFdEUsSUFBSSxDQUFDSCxhQUFhO1lBQ2hCLE9BQU9QLHFEQUFZQSxDQUFDVSxJQUFJLENBQUM7Z0JBQUVDLE9BQU87WUFBb0IsR0FBRztnQkFBRUMsUUFBUTtZQUFJO1FBQ3pFO1FBRUEsTUFBTUMsUUFBUVosTUFBTWEsa0JBQWtCLENBQUM7WUFDckNELE9BQU87UUFDVDtRQUVBLE1BQU1FLFNBQVMsQ0FBQyw4REFBOEQsRUFBRU4sYUFBYTs7OzttREFJOUMsQ0FBQztRQUVoRCxzQkFBc0I7UUFDdEIsTUFBTU8sWUFBWTtZQUNoQkMsWUFBWTtnQkFDVkMsTUFBTVgsWUFBWVksT0FBTyxDQUFDLDRCQUE0QjtnQkFDdERDLFVBQVU7WUFDWjtRQUNGO1FBRUEsTUFBTUMsU0FBUyxNQUFNUixNQUFNUyxlQUFlLENBQUM7WUFDekNDLFVBQVU7Z0JBQ1I7b0JBQ0VDLE1BQU07b0JBQ05DLE9BQU87d0JBQ0xUO3dCQUNBOzRCQUFFVSxNQUFNWDt3QkFBTztxQkFDaEI7Z0JBQ0g7YUFDRDtZQUNEWSxrQkFBa0I7Z0JBQ2hCLDJFQUEyRTtnQkFDM0VDLG9CQUFvQjtvQkFBQztvQkFBUztpQkFBTztZQUN2QztRQUNGO1FBRUEsTUFBTUMsV0FBV1IsT0FBT1EsUUFBUTtRQUNoQyxJQUFJQyx1QkFBc0M7UUFDMUMsSUFBSUMsZUFBOEI7UUFFbEMsS0FBSyxNQUFNQyxRQUFRSCxTQUFTSSxVQUFVLEVBQUUsQ0FBQyxFQUFFLEVBQUVDLFNBQVNULFNBQVMsRUFBRSxDQUFFO1lBQ2pFLElBQUlPLEtBQUtmLFVBQVUsRUFBRUcsVUFBVWUsV0FBVyxXQUFXO2dCQUNuREwsdUJBQXVCLENBQUMsS0FBSyxFQUFFRSxLQUFLZixVQUFVLENBQUNHLFFBQVEsQ0FBQyxRQUFRLEVBQUVZLEtBQUtmLFVBQVUsQ0FBQ0MsSUFBSSxFQUFFO1lBQzFGLE9BQU8sSUFBSWMsS0FBS04sSUFBSSxFQUFFO2dCQUNwQkssZUFBZUMsS0FBS04sSUFBSTtZQUMxQjtRQUNGO1FBRUEsT0FBTzFCLHFEQUFZQSxDQUFDVSxJQUFJLENBQUM7WUFDdkIwQixTQUFTO1lBQ1RDLGdCQUFnQlA7WUFDaEJKLE1BQU1LO1FBQ1I7SUFDRixFQUFFLE9BQU9wQixPQUFPO1FBQ2QyQixRQUFRM0IsS0FBSyxDQUFDLHFCQUFxQkE7UUFDbkMsT0FBT1gscURBQVlBLENBQUNVLElBQUksQ0FDdEI7WUFBRUMsT0FBTztZQUFtQzRCLFNBQVNDLE9BQU83QjtRQUFPLEdBQ25FO1lBQUVDLFFBQVE7UUFBSTtJQUVsQjtBQUNGIiwic291cmNlcyI6WyJDOlxcVXNlcnNcXGNwdVxcRGVza3RvcFxcYWluZWtfbXZwXFxhaW5la19tdnBfY2xhdWRlXFxhaW5la1xcc3JjXFxhcHBcXGFwaVxcZ2VtaW5pXFxyb3V0ZS50cyJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyBHb29nbGVHZW5lcmF0aXZlQUkgfSBmcm9tIFwiQGdvb2dsZS9nZW5lcmF0aXZlLWFpXCI7XG5pbXBvcnQgeyBOZXh0UmVxdWVzdCwgTmV4dFJlc3BvbnNlIH0gZnJvbSBcIm5leHQvc2VydmVyXCI7XG5cbmNvbnN0IGdlbkFJID0gbmV3IEdvb2dsZUdlbmVyYXRpdmVBSShwcm9jZXNzLmVudi5HRU1JTklfQVBJX0tFWSB8fCBcIlwiKTtcblxuZXhwb3J0IGFzeW5jIGZ1bmN0aW9uIFBPU1QocmVxOiBOZXh0UmVxdWVzdCkge1xuICB0cnkge1xuICAgIGNvbnN0IHsgaW1hZ2VCYXNlNjQsIGNsb3RoaW5nSW1hZ2VVcmwsIGNsb3RoaW5nTmFtZSB9ID0gYXdhaXQgcmVxLmpzb24oKTtcblxuICAgIGlmICghaW1hZ2VCYXNlNjQpIHtcbiAgICAgIHJldHVybiBOZXh0UmVzcG9uc2UuanNvbih7IGVycm9yOiBcIk5vIGltYWdlIHByb3ZpZGVkXCIgfSwgeyBzdGF0dXM6IDQwMCB9KTtcbiAgICB9XG5cbiAgICBjb25zdCBtb2RlbCA9IGdlbkFJLmdldEdlbmVyYXRpdmVNb2RlbCh7XG4gICAgICBtb2RlbDogXCJnZW1pbmktMi4wLWZsYXNoLXByZXZpZXctaW1hZ2UtZ2VuZXJhdGlvblwiLFxuICAgIH0pO1xuXG4gICAgY29uc3QgcHJvbXB0ID0gYFlvdSBhcmUgYSB2aXJ0dWFsIGZpdHRpbmcgcm9vbSBBSS4gVGhlIHVzZXIgd2FudHMgdG8gdHJ5IG9uOiBcIiR7Y2xvdGhpbmdOYW1lfVwiLiBcbiAgICBHZW5lcmF0ZSBhIHBob3RvcmVhbGlzdGljIGltYWdlIHNob3dpbmcgdGhpcyBwZXJzb24gd2VhcmluZyB0aGUgc2VsZWN0ZWQgY2xvdGhpbmcgaXRlbSBuYXR1cmFsbHkgYW5kIHN0eWxpc2hseS5cbiAgICBQcmVzZXJ2ZSB0aGUgcGVyc29uJ3MgZXhhY3QgcG9zZSwgc2tpbiB0b25lLCBoYWlyLCBhbmQgZmFjaWFsIGZlYXR1cmVzLlxuICAgIFRoZSBjbG90aGluZyBzaG91bGQgZml0IG5hdHVyYWxseSBvbiB0aGVpciBib2R5IHdpdGggcHJvcGVyIGxpZ2h0aW5nIGFuZCBzaGFkb3dzLlxuICAgIE1ha2UgaXQgbG9vayBsaWtlIGEgcHJvZmVzc2lvbmFsIGZhc2hpb24gcGhvdG8uYDtcblxuICAgIC8vIEJ1aWxkIGNvbnRlbnQgcGFydHNcbiAgICBjb25zdCBpbWFnZVBhcnQgPSB7XG4gICAgICBpbmxpbmVEYXRhOiB7XG4gICAgICAgIGRhdGE6IGltYWdlQmFzZTY0LnJlcGxhY2UoL15kYXRhOmltYWdlXFwvXFx3KztiYXNlNjQsLywgXCJcIiksXG4gICAgICAgIG1pbWVUeXBlOiBcImltYWdlL2pwZWdcIiBhcyBjb25zdCxcbiAgICAgIH0sXG4gICAgfTtcblxuICAgIGNvbnN0IHJlc3VsdCA9IGF3YWl0IG1vZGVsLmdlbmVyYXRlQ29udGVudCh7XG4gICAgICBjb250ZW50czogW1xuICAgICAgICB7XG4gICAgICAgICAgcm9sZTogXCJ1c2VyXCIsXG4gICAgICAgICAgcGFydHM6IFtcbiAgICAgICAgICAgIGltYWdlUGFydCxcbiAgICAgICAgICAgIHsgdGV4dDogcHJvbXB0IH0sXG4gICAgICAgICAgXSxcbiAgICAgICAgfSxcbiAgICAgIF0sXG4gICAgICBnZW5lcmF0aW9uQ29uZmlnOiB7XG4gICAgICAgIC8vIEB0cy1leHBlY3QtZXJyb3IgLSByZXNwb25zZU1vZGFsaXRpZXMgaXMgc3VwcG9ydGVkIGluIG5ld2VyIFNESyB2ZXJzaW9uc1xuICAgICAgICByZXNwb25zZU1vZGFsaXRpZXM6IFtcIklNQUdFXCIsIFwiVEVYVFwiXSxcbiAgICAgIH0sXG4gICAgfSk7XG5cbiAgICBjb25zdCByZXNwb25zZSA9IHJlc3VsdC5yZXNwb25zZTtcbiAgICBsZXQgZ2VuZXJhdGVkSW1hZ2VCYXNlNjQ6IHN0cmluZyB8IG51bGwgPSBudWxsO1xuICAgIGxldCB0ZXh0UmVzcG9uc2U6IHN0cmluZyB8IG51bGwgPSBudWxsO1xuXG4gICAgZm9yIChjb25zdCBwYXJ0IG9mIHJlc3BvbnNlLmNhbmRpZGF0ZXM/LlswXT8uY29udGVudD8ucGFydHMgfHwgW10pIHtcbiAgICAgIGlmIChwYXJ0LmlubGluZURhdGE/Lm1pbWVUeXBlPy5zdGFydHNXaXRoKFwiaW1hZ2UvXCIpKSB7XG4gICAgICAgIGdlbmVyYXRlZEltYWdlQmFzZTY0ID0gYGRhdGE6JHtwYXJ0LmlubGluZURhdGEubWltZVR5cGV9O2Jhc2U2NCwke3BhcnQuaW5saW5lRGF0YS5kYXRhfWA7XG4gICAgICB9IGVsc2UgaWYgKHBhcnQudGV4dCkge1xuICAgICAgICB0ZXh0UmVzcG9uc2UgPSBwYXJ0LnRleHQ7XG4gICAgICB9XG4gICAgfVxuXG4gICAgcmV0dXJuIE5leHRSZXNwb25zZS5qc29uKHtcbiAgICAgIHN1Y2Nlc3M6IHRydWUsXG4gICAgICBnZW5lcmF0ZWRJbWFnZTogZ2VuZXJhdGVkSW1hZ2VCYXNlNjQsXG4gICAgICB0ZXh0OiB0ZXh0UmVzcG9uc2UsXG4gICAgfSk7XG4gIH0gY2F0Y2ggKGVycm9yKSB7XG4gICAgY29uc29sZS5lcnJvcihcIkdlbWluaSBBUEkgZXJyb3I6XCIsIGVycm9yKTtcbiAgICByZXR1cm4gTmV4dFJlc3BvbnNlLmpzb24oXG4gICAgICB7IGVycm9yOiBcIkZhaWxlZCB0byBnZW5lcmF0ZSB0cnktb24gaW1hZ2VcIiwgZGV0YWlsczogU3RyaW5nKGVycm9yKSB9LFxuICAgICAgeyBzdGF0dXM6IDUwMCB9XG4gICAgKTtcbiAgfVxufVxuIl0sIm5hbWVzIjpbIkdvb2dsZUdlbmVyYXRpdmVBSSIsIk5leHRSZXNwb25zZSIsImdlbkFJIiwicHJvY2VzcyIsImVudiIsIkdFTUlOSV9BUElfS0VZIiwiUE9TVCIsInJlcSIsImltYWdlQmFzZTY0IiwiY2xvdGhpbmdJbWFnZVVybCIsImNsb3RoaW5nTmFtZSIsImpzb24iLCJlcnJvciIsInN0YXR1cyIsIm1vZGVsIiwiZ2V0R2VuZXJhdGl2ZU1vZGVsIiwicHJvbXB0IiwiaW1hZ2VQYXJ0IiwiaW5saW5lRGF0YSIsImRhdGEiLCJyZXBsYWNlIiwibWltZVR5cGUiLCJyZXN1bHQiLCJnZW5lcmF0ZUNvbnRlbnQiLCJjb250ZW50cyIsInJvbGUiLCJwYXJ0cyIsInRleHQiLCJnZW5lcmF0aW9uQ29uZmlnIiwicmVzcG9uc2VNb2RhbGl0aWVzIiwicmVzcG9uc2UiLCJnZW5lcmF0ZWRJbWFnZUJhc2U2NCIsInRleHRSZXNwb25zZSIsInBhcnQiLCJjYW5kaWRhdGVzIiwiY29udGVudCIsInN0YXJ0c1dpdGgiLCJzdWNjZXNzIiwiZ2VuZXJhdGVkSW1hZ2UiLCJjb25zb2xlIiwiZGV0YWlscyIsIlN0cmluZyJdLCJpZ25vcmVMaXN0IjpbXSwic291cmNlUm9vdCI6IiJ9\n//# sourceURL=webpack-internal:///(rsc)/./src/app/api/gemini/route.ts\n");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   POST: () => (/* binding */ POST)\n/* harmony export */ });\n/* harmony import */ var _google_genai__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @google/genai */ \"(rsc)/../../node_modules/@google/genai/dist/node/index.mjs\");\n/* harmony import */ var next_server__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! next/server */ \"(rsc)/./node_modules/next/dist/api/server.js\");\n\n\nconst ai = new _google_genai__WEBPACK_IMPORTED_MODULE_0__.GoogleGenAI({\n    apiKey: process.env.GEMINI_API_KEY || \"\"\n});\nasync function POST(req) {\n    try {\n        const { imageBase64, clothingName } = await req.json();\n        if (!imageBase64) {\n            return next_server__WEBPACK_IMPORTED_MODULE_1__.NextResponse.json({\n                error: \"No image provided\"\n            }, {\n                status: 400\n            });\n        }\n        if (!process.env.GEMINI_API_KEY) {\n            return next_server__WEBPACK_IMPORTED_MODULE_1__.NextResponse.json({\n                error: \"GEMINI_API_KEY not configured\"\n            }, {\n                status: 500\n            });\n        }\n        const prompt = `You are a virtual fitting room AI. The user wants to try on: \"${clothingName}\".\nGenerate a photorealistic image showing this exact person wearing the selected clothing item.\nPreserve the person's exact pose, skin tone, hair, face, and body proportions.\nReplace only their current clothing with the \"${clothingName}\".\nThe clothing should fit naturally with proper lighting and shadows matching the original photo.\nMake it look like a professional fashion photograph.`;\n        // Strip data URL prefix for inline data\n        const base64Data = imageBase64.replace(/^data:image\\/\\w+;base64,/, \"\");\n        const response = await ai.models.generateContent({\n            model: \"gemini-2.5-flash-image-preview\",\n            contents: [\n                {\n                    role: \"user\",\n                    parts: [\n                        {\n                            inlineData: {\n                                mimeType: \"image/jpeg\",\n                                data: base64Data\n                            }\n                        },\n                        {\n                            text: prompt\n                        }\n                    ]\n                }\n            ],\n            config: {\n                responseModalities: [\n                    \"TEXT\",\n                    \"IMAGE\"\n                ]\n            }\n        });\n        let generatedImageBase64 = null;\n        let textResponse = null;\n        for (const part of response.candidates?.[0]?.content?.parts || []){\n            if (part.inlineData?.mimeType?.startsWith(\"image/\")) {\n                generatedImageBase64 = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;\n            } else if (part.text) {\n                textResponse = part.text;\n            }\n        }\n        if (!generatedImageBase64) {\n            return next_server__WEBPACK_IMPORTED_MODULE_1__.NextResponse.json({\n                error: \"Model did not return an image. Try again.\",\n                text: textResponse\n            }, {\n                status: 500\n            });\n        }\n        return next_server__WEBPACK_IMPORTED_MODULE_1__.NextResponse.json({\n            success: true,\n            generatedImage: generatedImageBase64,\n            text: textResponse\n        });\n    } catch (error) {\n        console.error(\"Gemini API error:\", error);\n        const message = error instanceof Error ? error.message : String(error);\n        return next_server__WEBPACK_IMPORTED_MODULE_1__.NextResponse.json({\n            error: \"Failed to generate try-on image\",\n            details: message\n        }, {\n            status: 500\n        });\n    }\n}\n//# sourceURL=[module]\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiKHJzYykvLi9zcmMvYXBwL2FwaS9nZW1pbmkvcm91dGUudHMiLCJtYXBwaW5ncyI6Ijs7Ozs7O0FBQTRDO0FBQ1k7QUFFeEQsTUFBTUUsS0FBSyxJQUFJRixzREFBV0EsQ0FBQztJQUFFRyxRQUFRQyxRQUFRQyxHQUFHLENBQUNDLGNBQWMsSUFBSTtBQUFHO0FBRS9ELGVBQWVDLEtBQUtDLEdBQWdCO0lBQ3pDLElBQUk7UUFDRixNQUFNLEVBQUVDLFdBQVcsRUFBRUMsWUFBWSxFQUFFLEdBQUcsTUFBTUYsSUFBSUcsSUFBSTtRQUVwRCxJQUFJLENBQUNGLGFBQWE7WUFDaEIsT0FBT1IscURBQVlBLENBQUNVLElBQUksQ0FBQztnQkFBRUMsT0FBTztZQUFvQixHQUFHO2dCQUFFQyxRQUFRO1lBQUk7UUFDekU7UUFFQSxJQUFJLENBQUNULFFBQVFDLEdBQUcsQ0FBQ0MsY0FBYyxFQUFFO1lBQy9CLE9BQU9MLHFEQUFZQSxDQUFDVSxJQUFJLENBQUM7Z0JBQUVDLE9BQU87WUFBZ0MsR0FBRztnQkFBRUMsUUFBUTtZQUFJO1FBQ3JGO1FBRUEsTUFBTUMsU0FBUyxDQUFDLDhEQUE4RCxFQUFFSixhQUFhOzs7OENBR25ELEVBQUVBLGFBQWE7O29EQUVULENBQUM7UUFFakQsd0NBQXdDO1FBQ3hDLE1BQU1LLGFBQWFOLFlBQVlPLE9BQU8sQ0FBQyw0QkFBNEI7UUFFbkUsTUFBTUMsV0FBVyxNQUFNZixHQUFHZ0IsTUFBTSxDQUFDQyxlQUFlLENBQUM7WUFDL0NDLE9BQU87WUFDUEMsVUFBVTtnQkFDUjtvQkFDRUMsTUFBTTtvQkFDTkMsT0FBTzt3QkFDTDs0QkFDRUMsWUFBWTtnQ0FDVkMsVUFBVTtnQ0FDVkMsTUFBTVg7NEJBQ1I7d0JBQ0Y7d0JBQ0E7NEJBQUVZLE1BQU1iO3dCQUFPO3FCQUNoQjtnQkFDSDthQUNEO1lBQ0RjLFFBQVE7Z0JBQ05DLG9CQUFvQjtvQkFBQztvQkFBUTtpQkFBUTtZQUN2QztRQUNGO1FBRUEsSUFBSUMsdUJBQXNDO1FBQzFDLElBQUlDLGVBQThCO1FBRWxDLEtBQUssTUFBTUMsUUFBUWYsU0FBU2dCLFVBQVUsRUFBRSxDQUFDLEVBQUUsRUFBRUMsU0FBU1gsU0FBUyxFQUFFLENBQUU7WUFDakUsSUFBSVMsS0FBS1IsVUFBVSxFQUFFQyxVQUFVVSxXQUFXLFdBQVc7Z0JBQ25ETCx1QkFBdUIsQ0FBQyxLQUFLLEVBQUVFLEtBQUtSLFVBQVUsQ0FBQ0MsUUFBUSxDQUFDLFFBQVEsRUFBRU8sS0FBS1IsVUFBVSxDQUFDRSxJQUFJLEVBQUU7WUFDMUYsT0FBTyxJQUFJTSxLQUFLTCxJQUFJLEVBQUU7Z0JBQ3BCSSxlQUFlQyxLQUFLTCxJQUFJO1lBQzFCO1FBQ0Y7UUFFQSxJQUFJLENBQUNHLHNCQUFzQjtZQUN6QixPQUFPN0IscURBQVlBLENBQUNVLElBQUksQ0FDdEI7Z0JBQUVDLE9BQU87Z0JBQTZDZSxNQUFNSTtZQUFhLEdBQ3pFO2dCQUFFbEIsUUFBUTtZQUFJO1FBRWxCO1FBRUEsT0FBT1oscURBQVlBLENBQUNVLElBQUksQ0FBQztZQUN2QnlCLFNBQVM7WUFDVEMsZ0JBQWdCUDtZQUNoQkgsTUFBTUk7UUFDUjtJQUNGLEVBQUUsT0FBT25CLE9BQU87UUFDZDBCLFFBQVExQixLQUFLLENBQUMscUJBQXFCQTtRQUNuQyxNQUFNMkIsVUFBVTNCLGlCQUFpQjRCLFFBQVE1QixNQUFNMkIsT0FBTyxHQUFHRSxPQUFPN0I7UUFDaEUsT0FBT1gscURBQVlBLENBQUNVLElBQUksQ0FDdEI7WUFBRUMsT0FBTztZQUFtQzhCLFNBQVNIO1FBQVEsR0FDN0Q7WUFBRTFCLFFBQVE7UUFBSTtJQUVsQjtBQUNGIiwic291cmNlcyI6WyJDOlxcVXNlcnNcXGNwdVxcRGVza3RvcFxcYWluZWtfbXZwXFxhaW5la19tdnBfY2xhdWRlXFxhaW5la1xcc3JjXFxhcHBcXGFwaVxcZ2VtaW5pXFxyb3V0ZS50cyJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyBHb29nbGVHZW5BSSB9IGZyb20gXCJAZ29vZ2xlL2dlbmFpXCI7XG5pbXBvcnQgeyBOZXh0UmVxdWVzdCwgTmV4dFJlc3BvbnNlIH0gZnJvbSBcIm5leHQvc2VydmVyXCI7XG5cbmNvbnN0IGFpID0gbmV3IEdvb2dsZUdlbkFJKHsgYXBpS2V5OiBwcm9jZXNzLmVudi5HRU1JTklfQVBJX0tFWSB8fCBcIlwiIH0pO1xuXG5leHBvcnQgYXN5bmMgZnVuY3Rpb24gUE9TVChyZXE6IE5leHRSZXF1ZXN0KSB7XG4gIHRyeSB7XG4gICAgY29uc3QgeyBpbWFnZUJhc2U2NCwgY2xvdGhpbmdOYW1lIH0gPSBhd2FpdCByZXEuanNvbigpO1xuXG4gICAgaWYgKCFpbWFnZUJhc2U2NCkge1xuICAgICAgcmV0dXJuIE5leHRSZXNwb25zZS5qc29uKHsgZXJyb3I6IFwiTm8gaW1hZ2UgcHJvdmlkZWRcIiB9LCB7IHN0YXR1czogNDAwIH0pO1xuICAgIH1cblxuICAgIGlmICghcHJvY2Vzcy5lbnYuR0VNSU5JX0FQSV9LRVkpIHtcbiAgICAgIHJldHVybiBOZXh0UmVzcG9uc2UuanNvbih7IGVycm9yOiBcIkdFTUlOSV9BUElfS0VZIG5vdCBjb25maWd1cmVkXCIgfSwgeyBzdGF0dXM6IDUwMCB9KTtcbiAgICB9XG5cbiAgICBjb25zdCBwcm9tcHQgPSBgWW91IGFyZSBhIHZpcnR1YWwgZml0dGluZyByb29tIEFJLiBUaGUgdXNlciB3YW50cyB0byB0cnkgb246IFwiJHtjbG90aGluZ05hbWV9XCIuXG5HZW5lcmF0ZSBhIHBob3RvcmVhbGlzdGljIGltYWdlIHNob3dpbmcgdGhpcyBleGFjdCBwZXJzb24gd2VhcmluZyB0aGUgc2VsZWN0ZWQgY2xvdGhpbmcgaXRlbS5cblByZXNlcnZlIHRoZSBwZXJzb24ncyBleGFjdCBwb3NlLCBza2luIHRvbmUsIGhhaXIsIGZhY2UsIGFuZCBib2R5IHByb3BvcnRpb25zLlxuUmVwbGFjZSBvbmx5IHRoZWlyIGN1cnJlbnQgY2xvdGhpbmcgd2l0aCB0aGUgXCIke2Nsb3RoaW5nTmFtZX1cIi5cblRoZSBjbG90aGluZyBzaG91bGQgZml0IG5hdHVyYWxseSB3aXRoIHByb3BlciBsaWdodGluZyBhbmQgc2hhZG93cyBtYXRjaGluZyB0aGUgb3JpZ2luYWwgcGhvdG8uXG5NYWtlIGl0IGxvb2sgbGlrZSBhIHByb2Zlc3Npb25hbCBmYXNoaW9uIHBob3RvZ3JhcGguYDtcblxuICAgIC8vIFN0cmlwIGRhdGEgVVJMIHByZWZpeCBmb3IgaW5saW5lIGRhdGFcbiAgICBjb25zdCBiYXNlNjREYXRhID0gaW1hZ2VCYXNlNjQucmVwbGFjZSgvXmRhdGE6aW1hZ2VcXC9cXHcrO2Jhc2U2NCwvLCBcIlwiKTtcblxuICAgIGNvbnN0IHJlc3BvbnNlID0gYXdhaXQgYWkubW9kZWxzLmdlbmVyYXRlQ29udGVudCh7XG4gICAgICBtb2RlbDogXCJnZW1pbmktMi41LWZsYXNoLWltYWdlLXByZXZpZXdcIixcbiAgICAgIGNvbnRlbnRzOiBbXG4gICAgICAgIHtcbiAgICAgICAgICByb2xlOiBcInVzZXJcIixcbiAgICAgICAgICBwYXJ0czogW1xuICAgICAgICAgICAge1xuICAgICAgICAgICAgICBpbmxpbmVEYXRhOiB7XG4gICAgICAgICAgICAgICAgbWltZVR5cGU6IFwiaW1hZ2UvanBlZ1wiLFxuICAgICAgICAgICAgICAgIGRhdGE6IGJhc2U2NERhdGEsXG4gICAgICAgICAgICAgIH0sXG4gICAgICAgICAgICB9LFxuICAgICAgICAgICAgeyB0ZXh0OiBwcm9tcHQgfSxcbiAgICAgICAgICBdLFxuICAgICAgICB9LFxuICAgICAgXSxcbiAgICAgIGNvbmZpZzoge1xuICAgICAgICByZXNwb25zZU1vZGFsaXRpZXM6IFtcIlRFWFRcIiwgXCJJTUFHRVwiXSxcbiAgICAgIH0sXG4gICAgfSk7XG5cbiAgICBsZXQgZ2VuZXJhdGVkSW1hZ2VCYXNlNjQ6IHN0cmluZyB8IG51bGwgPSBudWxsO1xuICAgIGxldCB0ZXh0UmVzcG9uc2U6IHN0cmluZyB8IG51bGwgPSBudWxsO1xuXG4gICAgZm9yIChjb25zdCBwYXJ0IG9mIHJlc3BvbnNlLmNhbmRpZGF0ZXM/LlswXT8uY29udGVudD8ucGFydHMgfHwgW10pIHtcbiAgICAgIGlmIChwYXJ0LmlubGluZURhdGE/Lm1pbWVUeXBlPy5zdGFydHNXaXRoKFwiaW1hZ2UvXCIpKSB7XG4gICAgICAgIGdlbmVyYXRlZEltYWdlQmFzZTY0ID0gYGRhdGE6JHtwYXJ0LmlubGluZURhdGEubWltZVR5cGV9O2Jhc2U2NCwke3BhcnQuaW5saW5lRGF0YS5kYXRhfWA7XG4gICAgICB9IGVsc2UgaWYgKHBhcnQudGV4dCkge1xuICAgICAgICB0ZXh0UmVzcG9uc2UgPSBwYXJ0LnRleHQ7XG4gICAgICB9XG4gICAgfVxuXG4gICAgaWYgKCFnZW5lcmF0ZWRJbWFnZUJhc2U2NCkge1xuICAgICAgcmV0dXJuIE5leHRSZXNwb25zZS5qc29uKFxuICAgICAgICB7IGVycm9yOiBcIk1vZGVsIGRpZCBub3QgcmV0dXJuIGFuIGltYWdlLiBUcnkgYWdhaW4uXCIsIHRleHQ6IHRleHRSZXNwb25zZSB9LFxuICAgICAgICB7IHN0YXR1czogNTAwIH1cbiAgICAgICk7XG4gICAgfVxuXG4gICAgcmV0dXJuIE5leHRSZXNwb25zZS5qc29uKHtcbiAgICAgIHN1Y2Nlc3M6IHRydWUsXG4gICAgICBnZW5lcmF0ZWRJbWFnZTogZ2VuZXJhdGVkSW1hZ2VCYXNlNjQsXG4gICAgICB0ZXh0OiB0ZXh0UmVzcG9uc2UsXG4gICAgfSk7XG4gIH0gY2F0Y2ggKGVycm9yKSB7XG4gICAgY29uc29sZS5lcnJvcihcIkdlbWluaSBBUEkgZXJyb3I6XCIsIGVycm9yKTtcbiAgICBjb25zdCBtZXNzYWdlID0gZXJyb3IgaW5zdGFuY2VvZiBFcnJvciA/IGVycm9yLm1lc3NhZ2UgOiBTdHJpbmcoZXJyb3IpO1xuICAgIHJldHVybiBOZXh0UmVzcG9uc2UuanNvbihcbiAgICAgIHsgZXJyb3I6IFwiRmFpbGVkIHRvIGdlbmVyYXRlIHRyeS1vbiBpbWFnZVwiLCBkZXRhaWxzOiBtZXNzYWdlIH0sXG4gICAgICB7IHN0YXR1czogNTAwIH1cbiAgICApO1xuICB9XG59Il0sIm5hbWVzIjpbIkdvb2dsZUdlbkFJIiwiTmV4dFJlc3BvbnNlIiwiYWkiLCJhcGlLZXkiLCJwcm9jZXNzIiwiZW52IiwiR0VNSU5JX0FQSV9LRVkiLCJQT1NUIiwicmVxIiwiaW1hZ2VCYXNlNjQiLCJjbG90aGluZ05hbWUiLCJqc29uIiwiZXJyb3IiLCJzdGF0dXMiLCJwcm9tcHQiLCJiYXNlNjREYXRhIiwicmVwbGFjZSIsInJlc3BvbnNlIiwibW9kZWxzIiwiZ2VuZXJhdGVDb250ZW50IiwibW9kZWwiLCJjb250ZW50cyIsInJvbGUiLCJwYXJ0cyIsImlubGluZURhdGEiLCJtaW1lVHlwZSIsImRhdGEiLCJ0ZXh0IiwiY29uZmlnIiwicmVzcG9uc2VNb2RhbGl0aWVzIiwiZ2VuZXJhdGVkSW1hZ2VCYXNlNjQiLCJ0ZXh0UmVzcG9uc2UiLCJwYXJ0IiwiY2FuZGlkYXRlcyIsImNvbnRlbnQiLCJzdGFydHNXaXRoIiwic3VjY2VzcyIsImdlbmVyYXRlZEltYWdlIiwiY29uc29sZSIsIm1lc3NhZ2UiLCJFcnJvciIsIlN0cmluZyIsImRldGFpbHMiXSwiaWdub3JlTGlzdCI6W10sInNvdXJjZVJvb3QiOiIifQ==\n//# sourceURL=webpack-internal:///(rsc)/./src/app/api/gemini/route.ts\n");
 
 /***/ }),
 
@@ -98,6 +98,136 @@ module.exports = require("next/dist/server/app-render/work-unit-async-storage.ex
 
 /***/ }),
 
+/***/ "?3713":
+/*!****************************!*\
+  !*** bufferutil (ignored) ***!
+  \****************************/
+/***/ (() => {
+
+/* (ignored) */
+
+/***/ }),
+
+/***/ "?8e41":
+/*!********************************!*\
+  !*** utf-8-validate (ignored) ***!
+  \********************************/
+/***/ (() => {
+
+/* (ignored) */
+
+/***/ }),
+
+/***/ "assert":
+/*!*************************!*\
+  !*** external "assert" ***!
+  \*************************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("assert");
+
+/***/ }),
+
+/***/ "buffer":
+/*!*************************!*\
+  !*** external "buffer" ***!
+  \*************************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("buffer");
+
+/***/ }),
+
+/***/ "child_process":
+/*!********************************!*\
+  !*** external "child_process" ***!
+  \********************************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("child_process");
+
+/***/ }),
+
+/***/ "crypto":
+/*!*************************!*\
+  !*** external "crypto" ***!
+  \*************************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("crypto");
+
+/***/ }),
+
+/***/ "events":
+/*!*************************!*\
+  !*** external "events" ***!
+  \*************************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("events");
+
+/***/ }),
+
+/***/ "fs":
+/*!*********************!*\
+  !*** external "fs" ***!
+  \*********************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("fs");
+
+/***/ }),
+
+/***/ "fs/promises":
+/*!******************************!*\
+  !*** external "fs/promises" ***!
+  \******************************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("fs/promises");
+
+/***/ }),
+
+/***/ "http":
+/*!***********************!*\
+  !*** external "http" ***!
+  \***********************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("http");
+
+/***/ }),
+
+/***/ "https":
+/*!************************!*\
+  !*** external "https" ***!
+  \************************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("https");
+
+/***/ }),
+
+/***/ "net":
+/*!**********************!*\
+  !*** external "net" ***!
+  \**********************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("net");
+
+/***/ }),
+
 /***/ "next/dist/compiled/next-server/app-page.runtime.dev.js":
 /*!*************************************************************************!*\
   !*** external "next/dist/compiled/next-server/app-page.runtime.dev.js" ***!
@@ -140,6 +270,270 @@ module.exports = require("next/dist/shared/lib/no-fallback-error.external");
 "use strict";
 module.exports = require("next/dist/shared/lib/router/utils/app-paths");
 
+/***/ }),
+
+/***/ "node:buffer":
+/*!******************************!*\
+  !*** external "node:buffer" ***!
+  \******************************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("node:buffer");
+
+/***/ }),
+
+/***/ "node:fs":
+/*!**************************!*\
+  !*** external "node:fs" ***!
+  \**************************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("node:fs");
+
+/***/ }),
+
+/***/ "node:http":
+/*!****************************!*\
+  !*** external "node:http" ***!
+  \****************************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("node:http");
+
+/***/ }),
+
+/***/ "node:https":
+/*!*****************************!*\
+  !*** external "node:https" ***!
+  \*****************************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("node:https");
+
+/***/ }),
+
+/***/ "node:net":
+/*!***************************!*\
+  !*** external "node:net" ***!
+  \***************************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("node:net");
+
+/***/ }),
+
+/***/ "node:path":
+/*!****************************!*\
+  !*** external "node:path" ***!
+  \****************************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("node:path");
+
+/***/ }),
+
+/***/ "node:process":
+/*!*******************************!*\
+  !*** external "node:process" ***!
+  \*******************************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("node:process");
+
+/***/ }),
+
+/***/ "node:stream":
+/*!******************************!*\
+  !*** external "node:stream" ***!
+  \******************************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("node:stream");
+
+/***/ }),
+
+/***/ "node:stream/promises":
+/*!***************************************!*\
+  !*** external "node:stream/promises" ***!
+  \***************************************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("node:stream/promises");
+
+/***/ }),
+
+/***/ "node:stream/web":
+/*!**********************************!*\
+  !*** external "node:stream/web" ***!
+  \**********************************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("node:stream/web");
+
+/***/ }),
+
+/***/ "node:url":
+/*!***************************!*\
+  !*** external "node:url" ***!
+  \***************************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("node:url");
+
+/***/ }),
+
+/***/ "node:util":
+/*!****************************!*\
+  !*** external "node:util" ***!
+  \****************************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("node:util");
+
+/***/ }),
+
+/***/ "node:zlib":
+/*!****************************!*\
+  !*** external "node:zlib" ***!
+  \****************************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("node:zlib");
+
+/***/ }),
+
+/***/ "os":
+/*!*********************!*\
+  !*** external "os" ***!
+  \*********************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("os");
+
+/***/ }),
+
+/***/ "path":
+/*!***********************!*\
+  !*** external "path" ***!
+  \***********************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("path");
+
+/***/ }),
+
+/***/ "process":
+/*!**************************!*\
+  !*** external "process" ***!
+  \**************************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("process");
+
+/***/ }),
+
+/***/ "querystring":
+/*!******************************!*\
+  !*** external "querystring" ***!
+  \******************************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("querystring");
+
+/***/ }),
+
+/***/ "stream":
+/*!*************************!*\
+  !*** external "stream" ***!
+  \*************************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("stream");
+
+/***/ }),
+
+/***/ "tls":
+/*!**********************!*\
+  !*** external "tls" ***!
+  \**********************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("tls");
+
+/***/ }),
+
+/***/ "tty":
+/*!**********************!*\
+  !*** external "tty" ***!
+  \**********************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("tty");
+
+/***/ }),
+
+/***/ "url":
+/*!**********************!*\
+  !*** external "url" ***!
+  \**********************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("url");
+
+/***/ }),
+
+/***/ "util":
+/*!***********************!*\
+  !*** external "util" ***!
+  \***********************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("util");
+
+/***/ }),
+
+/***/ "worker_threads":
+/*!*********************************!*\
+  !*** external "worker_threads" ***!
+  \*********************************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("worker_threads");
+
+/***/ }),
+
+/***/ "zlib":
+/*!***********************!*\
+  !*** external "zlib" ***!
+  \***********************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("zlib");
+
 /***/ })
 
 };
@@ -149,7 +543,7 @@ module.exports = require("next/dist/shared/lib/router/utils/app-paths");
 var __webpack_require__ = require("../../../webpack-runtime.js");
 __webpack_require__.C(exports);
 var __webpack_exec__ = (moduleId) => (__webpack_require__(__webpack_require__.s = moduleId))
-var __webpack_exports__ = __webpack_require__.X(0, ["vendor-chunks/next","vendor-chunks/@google"], () => (__webpack_exec__("(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader/index.js?name=app%2Fapi%2Fgemini%2Froute&page=%2Fapi%2Fgemini%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fgemini%2Froute.ts&appDir=C%3A%5CUsers%5Ccpu%5CDesktop%5Cainek_mvp%5Cainek_mvp_claude%5Cainek%5Csrc%5Capp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=C%3A%5CUsers%5Ccpu%5CDesktop%5Cainek_mvp%5Cainek_mvp_claude%5Cainek&isDev=true&tsconfigPath=tsconfig.json&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D&isGlobalNotFoundEnabled=!")));
+var __webpack_exports__ = __webpack_require__.X(0, ["vendor-chunks/next","vendor-chunks/google-auth-library","vendor-chunks/ws","vendor-chunks/gaxios","vendor-chunks/jws","vendor-chunks/retry","vendor-chunks/json-bigint","vendor-chunks/google-logging-utils","vendor-chunks/gcp-metadata","vendor-chunks/ecdsa-sig-formatter","vendor-chunks/@google","vendor-chunks/safe-buffer","vendor-chunks/p-retry","vendor-chunks/jwa","vendor-chunks/extend","vendor-chunks/buffer-equal-constant-time","vendor-chunks/bignumber.js","vendor-chunks/base64-js"], () => (__webpack_exec__("(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader/index.js?name=app%2Fapi%2Fgemini%2Froute&page=%2Fapi%2Fgemini%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fgemini%2Froute.ts&appDir=C%3A%5CUsers%5Ccpu%5CDesktop%5Cainek_mvp%5Cainek_mvp_claude%5Cainek%5Csrc%5Capp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=C%3A%5CUsers%5Ccpu%5CDesktop%5Cainek_mvp%5Cainek_mvp_claude%5Cainek&isDev=true&tsconfigPath=tsconfig.json&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D&isGlobalNotFoundEnabled=!")));
 module.exports = __webpack_exports__;
 
 })();
