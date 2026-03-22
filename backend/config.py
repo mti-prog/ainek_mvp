@@ -21,6 +21,9 @@ HI_RES = (768, 1024)    # Width x Height for Stage 2 (blend-refine diffusion)
 CAMERA_INDEX = int(os.getenv("CAMERA_INDEX", "0"))
 CAMERA_FPS = int(os.getenv("CAMERA_FPS", "30"))
 
+# --- WebSocket ---
+WS_FRAME_RATE = int(os.getenv("WS_FRAME_RATE", "5"))  # Expected FPS from browser
+
 # --- Supabase ---
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")

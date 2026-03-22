@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import ClothingCard from './ClothingCard';
 import { getInventory } from '../api/client';
 import './ClothingCatalog.css';
@@ -23,12 +23,17 @@ function SkeletonCard() {
   );
 }
 
-export default function ClothingCatalog({ selectedGarment, onSelectGarment }) {
+export default function ClothingCatalog({ selectedGarment, onSelectGarment, onCustomGarment }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeCategory, setActiveCategory] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Custom garment state
+  const [imageUrl, setImageUrl] = useState('');
+  const [customPreview, setCustomPreview] = useState(null);
+  const fileInputRef = useRef(null);
 
   // Fetch inventory
   useEffect(() => {
@@ -42,7 +47,6 @@ export default function ClothingCatalog({ selectedGarment, onSelectGarment }) {
       } catch (err) {
         if (!cancelled) {
           setError(err.message);
-          // Use empty array on error — component shows empty state
           setItems([]);
         }
       } finally {
@@ -64,6 +68,34 @@ export default function ClothingCatalog({ selectedGarment, onSelectGarment }) {
     );
   }, [items, searchQuery]);
 
+  // ── Custom garment handlers ──
+  const handleFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      const base64 = dataUrl.split(',')[1];
+      setCustomPreview(dataUrl);
+      onCustomGarment?.({ type: 'base64', data: base64, name: file.name });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleUrlSubmit = () => {
+    const url = imageUrl.trim();
+    if (!url) return;
+    setCustomPreview(url);
+    onCustomGarment?.({ type: 'url', data: url, name: 'Custom (URL)' });
+  };
+
+  const clearCustom = () => {
+    setCustomPreview(null);
+    setImageUrl('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   return (
     <div className="clothing-catalog">
       <div className="catalog-header">
@@ -72,6 +104,61 @@ export default function ClothingCatalog({ selectedGarment, onSelectGarment }) {
           <span className="catalog-count">
             {loading ? '...' : `${filteredItems.length} items`}
           </span>
+        </div>
+
+        {/* ── Custom Garment Upload Section ── */}
+        <div className="custom-garment-section">
+          <div className="custom-garment-label">✨ Custom Garment</div>
+
+          {customPreview ? (
+            <div className="custom-garment-preview">
+              <img
+                src={customPreview}
+                alt="Custom garment"
+                className="custom-garment-thumb"
+                onError={() => setCustomPreview(null)}
+              />
+              <div className="custom-garment-preview-info">
+                <span className="custom-garment-active">Selected</span>
+                <button className="custom-garment-clear" onClick={clearCustom}>
+                  ✕ Clear
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="custom-garment-inputs">
+              {/* File Upload */}
+              <label className="custom-garment-upload-btn">
+                📁 Upload Image
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  style={{ display: 'none' }}
+                />
+              </label>
+
+              {/* URL Input */}
+              <div className="custom-garment-url-row">
+                <input
+                  className="custom-garment-url-input"
+                  type="text"
+                  placeholder="Paste image URL..."
+                  value={imageUrl}
+                  onChange={(e) => setImageUrl(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleUrlSubmit()}
+                />
+                <button
+                  className="custom-garment-url-apply"
+                  onClick={handleUrlSubmit}
+                  disabled={!imageUrl.trim()}
+                >
+                  Apply
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Search Bar */}

@@ -1,22 +1,24 @@
 """
 Ainek FastAPI Application
 Main backend server bridging the UI, local AI model, and inventory database.
+
+Architecture: The browser is the sole owner of the webcam.
+Frames are sent from the React frontend via WebSocket for processing.
 """
 
 import logging
 import base64
+import asyncio
 from typing import Optional
 from contextlib import asynccontextmanager
 
 import cv2
 import numpy as np
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
 from uuid import UUID
 
 from config import CORS_ORIGINS, HOST, PORT
-from capture import CameraCapture
 from pipeline import DSVTONPipeline
 from inventory import InventoryService
 from models.schemas import (
@@ -24,7 +26,6 @@ from models.schemas import (
     TryOnRequest,
     TryOnResponse,
     SystemStatus,
-    CaptureStatus,
 )
 
 # ── Logging ──
@@ -35,9 +36,12 @@ logging.basicConfig(
 logger = logging.getLogger("ainek")
 
 # ── Global Services ──
-camera = CameraCapture()
 pipeline = DSVTONPipeline()
 inventory = InventoryService()
+
+# ── Latest frame received from browser (thread-safe via asyncio) ──
+_latest_frame: Optional[np.ndarray] = None
+_browser_camera_active: bool = False
 
 
 @asynccontextmanager
@@ -46,6 +50,7 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("=" * 60)
     logger.info("  🪞 AINEK — AI Smart Mirror Starting...")
+    logger.info("  📷 Camera: browser-only mode (no local OpenCV capture)")
     logger.info("=" * 60)
 
     # Attempt to load model weights
@@ -57,7 +62,6 @@ async def lifespan(app: FastAPI):
     yield
 
     # Shutdown
-    camera.stop()
     logger.info("Ainek server shut down.")
 
 
@@ -65,7 +69,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Ainek AI Smart Mirror",
     description="Real-time virtual clothing try-on powered by DS-VTON",
-    version="0.1.0",
+    version="0.2.0",
     lifespan=lifespan,
 )
 
@@ -91,72 +95,50 @@ async def health_check():
         gpu_available=gpu_info["available"],
         gpu_name=gpu_info.get("name"),
         model_loaded=pipeline.model_loaded,
-        camera_active=camera.is_active,
+        camera_active=_browser_camera_active,
         lo_res=pipeline.lo_res,
         hi_res=pipeline.hi_res,
     )
 
 
 # ═══════════════════════════════════════════════════
-# Camera Capture
+# WebSocket — Receive Frames from Browser
 # ═══════════════════════════════════════════════════
 
-@app.get("/api/capture/status", response_model=CaptureStatus, tags=["Camera"])
-async def capture_status():
-    """Get current webcam capture status."""
-    return CaptureStatus(
-        active=camera.is_active,
-        camera_index=camera.camera_index,
-        fps=camera.fps,
-        frame_width=camera.frame_width,
-        frame_height=camera.frame_height,
-    )
+@app.websocket("/ws/frames")
+async def websocket_frames(websocket: WebSocket):
+    """
+    Receive webcam frames from the browser.
+    The browser captures the webcam locally via getUserMedia() and streams
+    base64-encoded JPEG frames over this WebSocket.
+    """
+    global _latest_frame, _browser_camera_active
 
+    await websocket.accept()
+    _browser_camera_active = True
+    logger.info("🔌 Browser camera WebSocket connected.")
 
-@app.post("/api/capture/start", response_model=CaptureStatus, tags=["Camera"])
-async def capture_start():
-    """Start the webcam capture."""
-    success = camera.start()
-    if not success:
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to start camera. Check that a webcam is connected.",
-        )
-    return CaptureStatus(
-        active=camera.is_active,
-        camera_index=camera.camera_index,
-        fps=camera.fps,
-        frame_width=camera.frame_width,
-        frame_height=camera.frame_height,
-    )
+    try:
+        while True:
+            # Receive base64-encoded JPEG frame from the browser
+            data = await websocket.receive_text()
 
+            try:
+                frame_data = base64.b64decode(data)
+                frame_array = np.frombuffer(frame_data, dtype=np.uint8)
+                frame = cv2.imdecode(frame_array, cv2.IMREAD_COLOR)
+                if frame is not None:
+                    _latest_frame = frame
+            except Exception as e:
+                logger.warning(f"Failed to decode frame: {e}")
 
-@app.post("/api/capture/stop", response_model=CaptureStatus, tags=["Camera"])
-async def capture_stop():
-    """Stop the webcam capture."""
-    camera.stop()
-    return CaptureStatus(
-        active=False,
-        camera_index=camera.camera_index,
-        fps=camera.fps,
-    )
-
-
-@app.get("/api/capture/frame", tags=["Camera"])
-async def capture_frame():
-    """Get the latest webcam frame as JPEG image."""
-    if not camera.is_active:
-        raise HTTPException(status_code=400, detail="Camera is not active. Start it first.")
-
-    frame_bytes = camera.get_frame_bytes()
-    if frame_bytes is None:
-        raise HTTPException(status_code=500, detail="No frame available.")
-
-    return StreamingResponse(
-        iter([frame_bytes]),
-        media_type="image/jpeg",
-        headers={"Cache-Control": "no-cache"},
-    )
+    except WebSocketDisconnect:
+        logger.info("🔌 Browser camera WebSocket disconnected.")
+    except Exception as e:
+        logger.error(f"WebSocket error: {e}")
+    finally:
+        _browser_camera_active = False
+        _latest_frame = None
 
 
 # ═══════════════════════════════════════════════════
@@ -197,10 +179,12 @@ async def try_on(request: TryOnRequest):
     """
     Virtual try-on: combine a webcam frame with a garment image.
 
-    Accepts a base64-encoded frame from the webcam and a clothing
-    item ID. Returns the try-on result as a base64-encoded image.
+    Accepts a base64-encoded person frame AND one of:
+    - clothing_id (catalog item)
+    - custom_garment_base64 (user-uploaded image)
+    - custom_garment_url (image URL)
     """
-    # Decode the person frame
+    # ── Decode the person frame ──
     try:
         frame_data = base64.b64decode(request.frame_base64)
         frame_array = np.frombuffer(frame_data, dtype=np.uint8)
@@ -210,19 +194,52 @@ async def try_on(request: TryOnRequest):
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid frame data: {e}")
 
-    # Get the garment image
-    item = await inventory.get_item_by_id(request.clothing_id)
-    if item is None:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Clothing item {request.clothing_id} not found.",
-        )
+    # ── Resolve the garment image ──
+    garment_image = None
 
-    # For now, create a placeholder garment image
-    # In production, this would load the actual garment image from storage
-    garment_image = np.zeros((512, 384, 3), dtype=np.uint8)
+    # Option 1: Custom garment from base64 upload
+    if request.custom_garment_base64:
+        try:
+            g_data = base64.b64decode(request.custom_garment_base64)
+            g_array = np.frombuffer(g_data, dtype=np.uint8)
+            garment_image = cv2.imdecode(g_array, cv2.IMREAD_COLOR)
+            if garment_image is None:
+                raise ValueError("Could not decode custom garment image")
+            logger.info("Using custom garment image (base64 upload).")
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Invalid custom garment image: {e}")
 
-    # Run the DS-VTON pipeline
+    # Option 2: Custom garment from URL
+    elif request.custom_garment_url:
+        try:
+            import httpx
+            async with httpx.AsyncClient(timeout=10) as client:
+                resp = await client.get(request.custom_garment_url)
+                resp.raise_for_status()
+            g_array = np.frombuffer(resp.content, dtype=np.uint8)
+            garment_image = cv2.imdecode(g_array, cv2.IMREAD_COLOR)
+            if garment_image is None:
+                raise ValueError("Could not decode image from URL")
+            logger.info(f"Using custom garment image from URL: {request.custom_garment_url}")
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Failed to fetch garment from URL: {e}")
+
+    # Option 3: Catalog item by ID
+    elif request.clothing_id:
+        item = await inventory.get_item_by_id(request.clothing_id)
+        if item is None:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Clothing item {request.clothing_id} not found.",
+            )
+        # Placeholder: in production, load the actual garment image from storage
+        garment_image = np.zeros((512, 384, 3), dtype=np.uint8)
+        logger.info(f"Using catalog item: {item.name}")
+
+    if garment_image is None:
+        raise HTTPException(status_code=400, detail="No valid garment source provided.")
+
+    # ── Run the DS-VTON pipeline ──
     result_image, processing_time = pipeline.infer(person_frame, garment_image)
 
     # Encode result to base64

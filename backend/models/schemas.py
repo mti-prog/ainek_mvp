@@ -3,7 +3,7 @@ Ainek Pydantic Models
 Request/response schemas for the FastAPI endpoints.
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from typing import Optional
 from datetime import datetime
 from uuid import UUID
@@ -32,10 +32,30 @@ class TryOnRequest(BaseModel):
         ...,
         description="Base64-encoded webcam frame (JPEG or PNG)"
     )
-    clothing_id: UUID = Field(
-        ...,
-        description="UUID of the clothing item to try on"
+    clothing_id: Optional[UUID] = Field(
+        default=None,
+        description="UUID of a catalog clothing item to try on"
     )
+    custom_garment_base64: Optional[str] = Field(
+        default=None,
+        description="Base64-encoded custom garment image uploaded by the user"
+    )
+    custom_garment_url: Optional[str] = Field(
+        default=None,
+        description="URL of a custom garment image"
+    )
+
+    @model_validator(mode="after")
+    def check_garment_source(self):
+        has_id = self.clothing_id is not None
+        has_base64 = self.custom_garment_base64 is not None
+        has_url = self.custom_garment_url is not None
+        if not (has_id or has_base64 or has_url):
+            raise ValueError(
+                "Provide at least one garment source: "
+                "clothing_id, custom_garment_base64, or custom_garment_url"
+            )
+        return self
 
 
 class TryOnResponse(BaseModel):

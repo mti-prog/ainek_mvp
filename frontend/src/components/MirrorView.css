@@ -183,3 +183,62 @@
 .mirror-selected-garment .close-btn:hover {
   color: var(--accent-red);
 }
+
+/* ── Countdown Overlay ── */
+.mirror-countdown-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 25;
+  backdrop-filter: blur(4px);
+}
+
+.mirror-countdown-number {
+  font-size: 8rem;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 0 40px var(--accent-cyan), 0 0 80px var(--accent-purple);
+  animation: countdown-pulse 1s ease-in-out;
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes countdown-pulse {
+  0% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+  30% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  80% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.8);
+    opacity: 0.3;
+  }
+}
+
+/* ── Flash Effect at Capture ── */
+.mirror-flash {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  z-index: 30;
+  animation: flash-out 0.35s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes flash-out {
+  0% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+  }
+}

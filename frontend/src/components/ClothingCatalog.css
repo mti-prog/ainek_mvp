@@ -32,6 +32,144 @@
   font-weight: 400;
 }
 
+/* ── Custom Garment Upload ── */
+.custom-garment-section {
+  margin-bottom: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.06), rgba(168, 85, 247, 0.06));
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.custom-garment-label {
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  color: var(--accent-cyan);
+  margin-bottom: var(--space-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.custom-garment-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.custom-garment-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: var(--bg-card);
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.custom-garment-upload-btn:hover {
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  background: rgba(0, 240, 255, 0.05);
+}
+
+.custom-garment-url-row {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.custom-garment-url-input {
+  flex: 1;
+  padding: 5px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-xs);
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.custom-garment-url-input::placeholder {
+  color: var(--text-muted);
+}
+
+.custom-garment-url-input:focus {
+  border-color: var(--accent-cyan-dim);
+}
+
+.custom-garment-url-apply {
+  padding: 5px 12px;
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+  color: var(--bg-primary);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-family);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+
+.custom-garment-url-apply:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.custom-garment-url-apply:not(:disabled):hover {
+  opacity: 0.85;
+}
+
+/* Preview */
+.custom-garment-preview {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.custom-garment-thumb {
+  width: 48px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+
+.custom-garment-preview-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.custom-garment-active {
+  font-size: var(--font-size-xs);
+  color: var(--accent-cyan);
+  font-weight: 600;
+}
+
+.custom-garment-clear {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--text-muted);
+  font-family: var(--font-family);
+  font-size: 11px;
+  cursor: pointer;
+  text-align: left;
+  transition: color var(--transition-fast);
+}
+
+.custom-garment-clear:hover {
+  color: var(--accent-red);
+}
+
 /* Search */
 .catalog-search {
   position: relative;

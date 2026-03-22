@@ -4,6 +4,7 @@
  */
 
 const BASE_URL = 'http://localhost:8000';
+const WS_URL = 'ws://localhost:8000';
 
 async function request(endpoint, options = {}) {
   const url = `${BASE_URL}${endpoint}`;
@@ -33,12 +34,6 @@ async function request(endpoint, options = {}) {
 // ── System ──
 export const getHealth = () => request('/health');
 
-// ── Camera ──
-export const getCaptureStatus = () => request('/api/capture/status');
-export const startCapture = () => request('/api/capture/start', { method: 'POST' });
-export const stopCapture = () => request('/api/capture/stop', { method: 'POST' });
-export const getFrameUrl = () => `${BASE_URL}/api/capture/frame`;
-
 // ── Inventory ──
 export const getInventory = (category) => {
   const params = category ? `?category=${category}` : '';
@@ -48,11 +43,18 @@ export const getInventoryItem = (id) => request(`/api/inventory/${id}`);
 export const searchInventory = (query) => request(`/api/inventory/search/?q=${encodeURIComponent(query)}`);
 
 // ── Try-On ──
-export const tryOn = (frameBase64, clothingId) =>
+export const tryOn = (frameBase64, { clothingId, customGarmentBase64, customGarmentUrl } = {}) =>
   request('/api/tryon', {
     method: 'POST',
     body: JSON.stringify({
       frame_base64: frameBase64,
-      clothing_id: clothingId,
+      ...(clothingId && { clothing_id: clothingId }),
+      ...(customGarmentBase64 && { custom_garment_base64: customGarmentBase64 }),
+      ...(customGarmentUrl && { custom_garment_url: customGarmentUrl }),
     }),
   });
+
+// ── WebSocket – Stream frames to backend ──
+export function createFrameWebSocket() {
+  return new WebSocket(`${WS_URL}/ws/frames`);
+}
