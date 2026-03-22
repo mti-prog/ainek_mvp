@@ -20,7 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <meta name="theme-color" content="#06060f" />
       </head>
-      <body style={{ margin: 0, padding: 0, background: "#06060f", overflow: "hidden" }}>
+      <body suppressHydrationWarning style={{ margin: 0, padding: 0, background: "#06060f", overflow: "hidden" }}>
         {children}
       </body>
     </html>

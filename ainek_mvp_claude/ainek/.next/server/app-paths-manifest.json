@@ -1,3 +1,4 @@
 {
+  "/api/gemini/route": "app/api/gemini/route.js",
   "/page": "app/page.js"
 }
